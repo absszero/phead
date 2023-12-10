@@ -1,0 +1,19 @@
+#!/usr/bin/env php
+<?php
+// application.php
+
+require __DIR__.'/../vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+
+try {
+    $application = new Application();
+    $application->add(new Absszero\Head\HeadCommand);
+    // changfe default command
+    $application->setDefaultCommand('head', true);
+    $application->run();
+} catch (Throwable $e) {
+    echo $e->getFile() . ':' . $e->getLine() . PHP_EOL . PHP_EOL;
+    echo $e->getMessage() . PHP_EOL;
+    exit(1);
+}

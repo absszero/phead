@@ -1,0 +1,39 @@
+files:
+  request:
+    from: /Volumes/data/develop/www/stubs/request.stub
+    to: app/Http/Requests/Hello/UpdateRequest.php
+  controller:
+    placeholders:
+      rootNamespace: App\
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      use {{ rootNamespace }}Http\Controllers\Controller;
+      use Illuminate\Http\Request;
+
+      class {{ class }} extends Controller
+      {
+          //
+      }
+
+    to: app/Http/Controllers/Hello/HelloController.php
+    method:
+      - "public update({{ files.request }} $request)"
+  model:
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      use Illuminate\Database\Eloquent\Factories\HasFactory;
+      use Illuminate\Database\Eloquent\Model;
+
+      class {{ class }} extends Model
+      {
+          use HasFactory;
+      }
+    to: app/Models/Hello.php
+    method:
+      - "public static updateByName(string $name, string $value)"
