@@ -1,7 +1,30 @@
 files:
   request:
-    from: /Volumes/data/develop/www/stubs/request.stub
+    from: config/request.stub
     to: app/Http/Requests/Hello/UpdateRequest.php
+    methods:
+      - |
+        public function toDto(): {{ files.dto }}
+        {
+            return new {{ files.dto }};
+        }
+
+  dto:
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      class {{ class }}
+      {
+          public function toArray(): array
+          {
+              return [
+              ];
+          }
+      }
+    to: app/Http/DTOs/Hello/UpdateDto.php
+
   controller:
     placeholders:
       rootNamespace: App\
@@ -10,30 +33,30 @@ files:
 
       namespace {{ namespace }};
 
-      use {{ rootNamespace }}Http\Controllers\Controller;
-      use Illuminate\Http\Request;
-
-      class {{ class }} extends Controller
+      class {{ class }}
       {
           //
       }
 
     to: app/Http/Controllers/Hello/HelloController.php
-    method:
-      - "public update({{ files.request }} $request)"
+    methods:
+      - |
+        public function update({{ files.request }} $request)
+        {
+        }
   model:
     from: |
       <?php
 
       namespace {{ namespace }};
 
-      use Illuminate\Database\Eloquent\Factories\HasFactory;
-      use Illuminate\Database\Eloquent\Model;
-
-      class {{ class }} extends Model
+      class {{ class }}
       {
           use HasFactory;
       }
     to: app/Models/Hello.php
-    method:
-      - "public static updateByName(string $name, string $value)"
+    methods:
+      - |
+        public function static updateByName(string $name, string $value)
+        {
+        }
