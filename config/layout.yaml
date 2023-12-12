@@ -1,9 +1,44 @@
+root: build/
+dir: Hello
 files:
   request:
-    from: config/request.stub
-    to: app/Http/Requests/Hello/UpdateRequest.php
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      use Illuminate\Foundation\Http\FormRequest;
+
+      class {{ class }} extends FormRequest
+      {
+          /**
+          * Determine if the user is authorized to make this request.
+          */
+          public function authorize(): bool
+          {
+              return true;
+          }
+
+          /**
+          * Get the validation rules that apply to the request.
+          *
+          * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+          */
+          public function rules(): array
+          {
+              return [
+                  //
+              ];
+          }
+      }
+    to: "{{ root }}app/Http/Requests/{{ dir }}/UpdateRequest.php"
     methods:
       - |
+        /**
+        * Get the dto from the request
+        *
+        * @return {{ files.dto }}
+        */
         public function toDto(): {{ files.dto }}
         {
             return new {{ files.dto }};
@@ -20,43 +55,131 @@ files:
           public function toArray(): array
           {
               return [
+                  //
               ];
           }
       }
-    to: app/Http/DTOs/Hello/UpdateDto.php
 
-  controller:
-    placeholders:
-      rootNamespace: App\
+    to: "{{ root }}app/Http/DTOs/{{ dir }}/UpdateDto.php"
+
+  dto_test:
+    disabled: true
     from: |
       <?php
 
       namespace {{ namespace }};
 
-      class {{ class }}
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+      use Illuminate\Foundation\Testing\WithFaker;
+      use Tests\TestCase;
+
+      class {{ class }} extends TestCase
+      {
+      }
+    to: "{{ root }}tests/Http/DTOs/{{ dir }}/UpdateDtoTest.php"
+    methods:
+      - |
+        public function testToArray(): void
+        {
+            $dto = new {{ files.dto }};
+        }
+
+
+  controller:
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      use App\Http\Controllers\Controller;
+      use Illuminate\Http\Request;
+
+      class {{ class }} extends Controller
       {
           //
       }
 
-    to: app/Http/Controllers/Hello/HelloController.php
+    to: "{{ root }}app/Http/Controllers/{{ dir }}/MainController.php"
     methods:
       - |
+        /**
+        * ....
+        * @param {{ files.request }} $request
+        */
         public function update({{ files.request }} $request)
         {
+            $dto = $request->toDto();
+            {{ files.model }}::updateByDto($dto);
         }
+  controller_test:
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+      use Illuminate\Foundation\Testing\WithFaker;
+      use Tests\TestCase;
+
+      class {{ class }} extends TestCase
+      {
+      }
+    to: "{{ root }}tests/Http/Controllers/{{ dir }}/MainControllerTest.php"
+    methods:
+      - |
+        public function testUpdate(): void
+        {
+            $response = $this->get('/');
+
+            $response->assertStatus(200);
+        }
+
   model:
     from: |
       <?php
 
       namespace {{ namespace }};
 
-      class {{ class }}
+      use Illuminate\Database\Eloquent\Factories\HasFactory;
+      use Illuminate\Database\Eloquent\Model;
+
+      class {{ class }} extends Model
       {
           use HasFactory;
       }
-    to: app/Models/Hello.php
+
+    to: "{{ root }}app/Models/{{ dir }}/Hello.php"
     methods:
       - |
-        public function static updateByName(string $name, string $value)
+        /**
+        * ....
+        *
+        * @param {{ files.dto }} $dto
+        */
+        public static function updateByDto({{ files.dto }} $dto)
         {
+            $data = $dto->toArray();
+        }
+
+  model_test:
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      use Illuminate\Foundation\Testing\RefreshDatabase;
+      use Illuminate\Foundation\Testing\WithFaker;
+      use Tests\TestCase;
+
+      class {{ class }} extends TestCase
+      {
+      }
+    to: "{{ root }}tests/Models/{{ dir }}/HelloTest.php"
+    methods:
+      - |
+        public function testUpdate(): void
+        {
+            $dto = new {{ files.dto }};
+
+            $model = {{ files.model }}::updateByDto($dto);
         }

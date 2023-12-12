@@ -17,7 +17,13 @@ class LayoutTest extends TestCase
                 'b' => [
                     'from' => 'yy',
                     'to' => 'yy'
-                ]
+                ],
+                'c' => [
+                    'disabled' => true,
+                    'from' => 'zz',
+                    'to' => 'zz'
+                ],
+
             ]
         ];
 
@@ -25,6 +31,37 @@ class LayoutTest extends TestCase
         $data = $layout->filter($data);
         $this->assertArrayNotHasKey('a', $data['files']);
         $this->assertArrayHasKey('b', $data['files']);
+        $this->assertArrayNotHasKey('c', $data['files']);
+    }
+
+    //test replaceAllPaths
+    public function testReplaceAllPaths()
+    {
+        $layout = new Layout;
+        $layout->data = [
+            'dir' => 'Hello',
+        ];
+
+        $files = [
+            'a' => [
+                'from' => '{{  dir }}/Request.stub',
+                'to' => '{{ dir  }}/Request.php',
+            ],
+            'b' => [
+                'from' => '
+                class Hello
+                {
+                    {{ dir }}
+                }',
+                'to' => '{{ dir  }}/Request.php',
+            ],
+        ];
+
+        $files = $layout->replaceAllPaths($files);
+        $this->assertEquals('Hello/Request.stub', $files['a']['from']);
+        $this->assertEquals('Hello/Request.php', $files['a']['to']);
+        $this->assertStringContainsString('{{ dir }}', $files['b']['from']);
+        $this->assertEquals('Hello/Request.php', $files['b']['to']);
     }
 
     // test getWithPlaceholders
@@ -43,7 +80,7 @@ class LayoutTest extends TestCase
         $this->assertEquals('App\Http\Requests\Hello', $files['a']['placeholders']['namespace']);
     }
 
-    public function testMatchMethodPlacehoders()
+    public function testGetMethodPlacehoders()
     {
         $files = [
             'dto' => [
@@ -65,7 +102,7 @@ class LayoutTest extends TestCase
             'files' => $files,
         ];
 
-        $files = $layout->matchMethodPlacehoders($files);
+        $files = $layout->getMethodPlacehoders($files);
         $this->assertEquals('\App\Dtos\UpdateDto', $files['a']['placeholders']['{{ files.dto }}']);
     }
 
@@ -108,14 +145,12 @@ class LayoutTest extends TestCase
     public function testReplacePlaceholders()
     {
         $layout = new Layout;
-        $file = [
-            'placeholders' => [
-                'class' => 'UpdateRequest',
-                'namespace' => 'App\Http\Requests\Hello',
-                '{{ files.dto }}' => 'UpdateDto',
-            ]
+        $placeholders = [
+            'class' => 'UpdateRequest',
+            'namespace' => 'App\Http\Requests\Hello',
+            '{{ files.dto }}' => 'UpdateDto',
         ];
-        $context = $layout->replacePlaceholders('{{ class }} {{ namespace }} {{ files.dto }}', $file);
+        $context = $layout->replacePlaceholders('{{ class }} {{ namespace }} {{ files.dto }}', $placeholders);
         $this->assertEquals('UpdateRequest App\Http\Requests\Hello UpdateDto', $context);
     }
 

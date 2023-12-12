@@ -40,7 +40,7 @@ class HeadCommand extends Command
                 $file['from'] = file_get_contents($file['from']);
             }
 
-            $file['from'] = $this->layout->replacePlaceholders($file['from'], $file);
+            $file['from'] = $this->layout->replacePlaceholders($file['from'], $file['placeholders']);
             $file['from'] = $this->layout->appendMethods($file);
             $file['to_path'] = $cwd . '/' . $file['to'];
 

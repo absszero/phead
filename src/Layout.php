@@ -5,6 +5,8 @@ use Symfony\Component\Yaml\Yaml;
 
 class Layout
 {
+    const BRACKET_PATTERN = '/{{ *([^ ]+) *}}/';
+
     public int $indent = 4;
     public string $indentChar = ' ';
     public array $data = [];
@@ -14,10 +16,13 @@ class Layout
         $data = Yaml::parseFile($file);
         $layout->data = $layout->filter($data);
 
+        $files = $layout->replaceAllPaths($data['files']);
+        $layout->set('files', $files);
+
         $files = $layout->getWithPlaceholders($layout->get('files'));
         $layout->set('files', $files);
 
-        $files = $layout->matchMethodPlacehoders($files);
+        $files = $layout->getMethodPlacehoders($files);
         $layout->set('files', $files);
 
         return $layout;
@@ -43,6 +48,14 @@ class Layout
         return $data;
     }
 
+    /**
+     * set data by dot notation
+     *
+     * @param   string  $key    [$key description]
+     * @param   mixed  $value  [$value description]
+     *
+     * @return  void            [return description]
+     */
     public function set(string $key, $value): void
     {
         $nodes = explode('.', $key);
@@ -59,6 +72,7 @@ class Layout
     }
 
     /**
+     * filter files
      *
      * @param array $data
      * @return array
@@ -67,24 +81,37 @@ class Layout
     {
         $files = [];
         if (!array_key_exists('files', $data) || !is_array($data['files'])) {
+            $data['files'] = [];
             return $data;
         }
 
-        foreach ($data['files'] as $index => $file) {
+        foreach ($data['files'] as $fileKey => $file) {
             if (!array_key_exists('from', $file)) {
                 continue;
             }
             if (!array_key_exists('to', $file)) {
                 continue;
             }
-            $files[$index] = $file;
+
+            $disabled = $file['disabled'] ?? false;
+            if ($disabled) {
+                continue;
+            }
+            $files[$fileKey] = $file;
         }
         $data['files'] = $files;
 
         return $data;
     }
 
-    public function getWithPlaceholders(array $files)
+    /**
+     * get files with placeholders
+     *
+     * @param   array  $files  [$files description]
+     *
+     * @return  array
+     */
+    public function getWithPlaceholders(array $files): array
     {
         foreach ($files as $key => $file) {
             $placeholders = [];
@@ -115,18 +142,23 @@ class Layout
         return $files;
     }
 
-    public function matchMethodPlacehoders(array $files): array
+    /**
+     * Get method placehoders to file['placeholders']
+     *
+     * @param   array  $files  [$files description]
+     *
+     * @return  array          [return description]
+     */
+    public function getMethodPlacehoders(array $files): array
     {
-        $pattern = '/{{ ([^ ]+) }}/';
-
-        // fetch all braces vars and replace with real classes
+        // fetch all brackets vars and replace with real classes
         foreach ($files as $key => $file) {
             if (!array_key_exists('methods', $file)) {
                 continue;
             }
             foreach ($file['methods'] as $method) {
                 $matches = [ 0 => [] ];
-                preg_match_all($pattern, $method, $matches, PREG_PATTERN_ORDER, 0);
+                preg_match_all(self::BRACKET_PATTERN, $method, $matches, PREG_PATTERN_ORDER, 0);
                 if (!$matches[0]) {
                     continue;
                 }
@@ -150,9 +182,17 @@ class Layout
         return $files;
     }
 
-    public function replacePlaceholders(string $source, array $file):  string
+    /**
+     * replace placeholders
+     *
+     * @param   string  $source  [$source description]
+     * @param   array   $file    [$file description]
+     *
+     * @return  string           [return description]
+     */
+    public function replacePlaceholders(string $source, array $placeholders):  string
     {
-        $search = array_keys($file['placeholders']);
+        $search = array_keys($placeholders);
         $search = array_map(function ($placeholder) {
             if ($placeholder[0] === '{') {
                 return $placeholder;
@@ -160,20 +200,26 @@ class Layout
 
             return '{{ ' . $placeholder . ' }}';
         }, $search);
-        $replace = array_values($file['placeholders']);
+        $replace = array_values($placeholders);
 
         return str_replace($search, $replace, $source);
     }
 
-    // appendMethods
-    public function appendMethods(array $file)
+    /**
+     * append methods to file
+     *
+     * @param   array  $file  [$file description]
+     *
+     * @return  string         [return description]
+     */
+    public function appendMethods(array $file): string
     {
         if (!array_key_exists('methods', $file) || !is_array($file['methods'])) {
             return $file['from'];
         }
 
         foreach ($file['methods'] as $index => $method) {
-            $methods[$index] = $this->replacePlaceholders($method, $file);
+            $methods[$index] = $this->replacePlaceholders($method, $file['placeholders']);
         }
         foreach ($methods as $index => $method) {
             $lines = array_filter(explode(PHP_EOL, $method));
@@ -193,5 +239,56 @@ class Layout
         }
 
         return $file['from'];
+    }
+
+    /**
+     * replace all paths placeholders
+     *
+     * @param   array  $files  [$files description]
+     *
+     * @return  array          [return description]
+     */
+    public function replaceAllPaths(array $files): array
+    {
+        foreach ($files as $index => $file) {
+            $file['to'] = $this->replacePathPlaceholders($file['to']);
+
+            // no new line character, it could b a path
+            if (strpos($file['from'], PHP_EOL) === false) {
+                $file['from'] = $this->replacePathPlaceholders($file['from']);
+            }
+            $files[$index] = $file;
+        }
+
+        return $files;
+    }
+
+    /**
+     * replace a path's placeholders
+     *
+     * @param   string  $fullPath  [$fullPath description]
+     *
+     * @return  string             [return description]
+     */
+    protected function replacePathPlaceholders(string $fullPath): string
+    {
+        $matches = [ 0 => [] ];
+        preg_match_all(self::BRACKET_PATTERN, $fullPath, $matches, PREG_PATTERN_ORDER, 0);
+
+        if (!$matches[0]) {
+            return $fullPath;
+        }
+
+        foreach ($matches[1] as $index => $key) {
+            $path = $this->get($key);
+            if (!$path) {
+                continue;
+            }
+
+            $matches[1][$index] = $path;
+        }
+
+        $fullPath = str_replace($matches[0], $matches[1], $fullPath);
+        return $fullPath;
     }
 }

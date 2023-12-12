@@ -6,4 +6,4 @@ clover.xml
 composer.lock
 *.cache
 .idea/
-app/*
+build/*
