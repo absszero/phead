@@ -12,7 +12,7 @@ class HeadCommand extends Command
 {
     protected Layout $layout;
 
-    protected function configure()
+    protected function configure(): void
     {
         $this
         ->setName('head')
@@ -23,7 +23,7 @@ class HeadCommand extends Command
         ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force ovverwrite existed files.');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
             $file = $input->getArgument('layout');
@@ -81,10 +81,10 @@ class HeadCommand extends Command
     /**
      * Get files only in the $only
      *
-     * @param   array   $files  [$files description]
-     * @param   string  $only   [$only description]
+     * @param   array<string, mixed>   $files  [$files description]
+     * @param   string  $only                  [$only description]
      *
-     * @return  array           [return description]
+     * @return  array<string, mixed>           [return description]
      */
     protected function getOnlyFiles(array $files, ?string $only): array
     {
@@ -92,7 +92,7 @@ class HeadCommand extends Command
             return $files;
         }
 
-        $only = $only ? explode(',', $only) : [];
+        $only = explode(',', $only);
         $only = array_filter($only);
         $only = array_map('trim', $only);
 
@@ -101,7 +101,7 @@ class HeadCommand extends Command
             if (isset($files[$fileKey])) {
                 // ignore the skip flag
                 $files[$fileKey]['skip'] = false;
-                $found[] = $files[$fileKey];
+                $found[$fileKey] = $files[$fileKey];
             }
         }
 

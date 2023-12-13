@@ -13,7 +13,7 @@ class HeadCommandTest extends TestCase
     }
 
     // test HeadCommand
-    public function testLayout()
+    public function testLayout(): void
     {
         // file not found
         $command = $this->addCommand(HeadCommand::class);
@@ -27,7 +27,7 @@ class HeadCommandTest extends TestCase
     }
 
     // test only option
-    public function testOnly()
+    public function testOnly(): void
     {
         $input = [
             'layout' => __DIR__  . '/../config/layout.yaml',
@@ -41,7 +41,7 @@ class HeadCommandTest extends TestCase
     }
 
     // test dry run option
-    public function testDry()
+    public function testDry(): void
     {
         $input = [
             'layout' => __DIR__  . '/../config/layout.yaml',
@@ -54,7 +54,7 @@ class HeadCommandTest extends TestCase
     }
 
     // test force option
-    public function testForce()
+    public function testForce(): void
     {
         $input = [
             'layout' => __DIR__  . '/../config/layout.yaml',

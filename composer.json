@@ -36,7 +36,7 @@
     },
     "scripts": {
         "static-analysis": [
-            "@php ./vendor/bin/phpstan analyse src tests --level 8",
+            "@php ./vendor/bin/phpstan",
             "@php ./vendor/bin/psalm --no-cache"
         ],
         "test": [

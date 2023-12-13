@@ -9,11 +9,14 @@ class Layout
 
     public int $indent = 4;
     public string $indentChar = ' ';
-    public array $data = [];
-    public static function parse(string $file)
+    /**
+     * @var array<string, mixed>
+     */
+    public array $data = ['files' => []];
+    public static function parse(string $file): self
     {
         $layout = new self;
-        $data = Yaml::parseFile($file);
+        $data = (array)Yaml::parseFile($file);
         $layout->data = $layout->filter($data);
 
         $files = $layout->replaceAllPaths($data['files']);
@@ -59,6 +62,9 @@ class Layout
     public function set(string $key, $value): void
     {
         $nodes = explode('.', $key);
+        /**
+         * @psalm-suppress UnsupportedPropertyReferenceUsage
+         */
         $data = & $this->data;
         foreach ($nodes as $node) {
             if (!array_key_exists($node, $data) || !is_array($data[$node])) {
@@ -74,8 +80,8 @@ class Layout
     /**
      * filter files
      *
-     * @param array $data
-     * @return array
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
     public function filter(array $data): array
     {
@@ -102,9 +108,9 @@ class Layout
     /**
      * get files with placeholders
      *
-     * @param   array  $files  [$files description]
+     * @param   array<string, mixed>  $files  [$files description]
      *
-     * @return  array
+     * @return  array<string, mixed>
      */
     public function getWithPlaceholders(array $files): array
     {
@@ -140,9 +146,9 @@ class Layout
     /**
      * Get method placehoders to file['placeholders']
      *
-     * @param   array  $files  [$files description]
+     * @param   array<string, mixed>  $files  [$files description]
      *
-     * @return  array          [return description]
+     * @return  array<string, mixed>          [return description]
      */
     public function getMethodPlacehoders(array $files): array
     {
@@ -181,7 +187,7 @@ class Layout
      * replace placeholders
      *
      * @param   string  $source  [$source description]
-     * @param   array   $file    [$file description]
+     * @param   array<string, string>   $placeholders
      *
      * @return  string           [return description]
      */
@@ -203,7 +209,7 @@ class Layout
     /**
      * append methods to file
      *
-     * @param   array  $file  [$file description]
+     * @param   array<string, mixed>  $file  [$file description]
      *
      * @return  string         [return description]
      */
@@ -213,6 +219,7 @@ class Layout
             return $file['from'];
         }
 
+        $methods = [];
         foreach ($file['methods'] as $index => $method) {
             $methods[$index] = $this->replacePlaceholders($method, $file['placeholders']);
         }
@@ -239,9 +246,9 @@ class Layout
     /**
      * replace all paths placeholders
      *
-     * @param   array  $files  [$files description]
+     * @param   array<string, mixed>  $files  [$files description]
      *
-     * @return  array          [return description]
+     * @return  array<string, mixed>          [return description]
      */
     public function replaceAllPaths(array $files): array
     {

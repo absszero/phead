@@ -7,7 +7,7 @@ use Absszero\Head\Layout;
 class LayoutTest extends TestCase
 {
     //test filter
-    public function testFilter()
+    public function testFilter(): void
     {
         $data = [
             'files' => [
@@ -28,7 +28,7 @@ class LayoutTest extends TestCase
     }
 
     //test replaceAllPaths
-    public function testReplaceAllPaths()
+    public function testReplaceAllPaths(): void
     {
         $layout = new Layout;
         $layout->data = [
@@ -58,7 +58,7 @@ class LayoutTest extends TestCase
     }
 
     // test getWithPlaceholders
-    public function testGetWithPlaceholders()
+    public function testGetWithPlaceholders(): void
     {
         $files = [
             'a' => [
@@ -73,7 +73,7 @@ class LayoutTest extends TestCase
         $this->assertEquals('App\Http\Requests\Hello', $files['a']['placeholders']['namespace']);
     }
 
-    public function testGetMethodPlacehoders()
+    public function testGetMethodPlacehoders(): void
     {
         $files = [
             'dto' => [
@@ -99,7 +99,7 @@ class LayoutTest extends TestCase
         $this->assertEquals('\App\Dtos\UpdateDto', $files['a']['placeholders']['{{ files.dto }}']);
     }
 
-    public function testGet()
+    public function testGet(): void
     {
         $layout = new Layout;
         $layout->data = [
@@ -115,7 +115,7 @@ class LayoutTest extends TestCase
         $this->assertEquals('xx', $layout->get('files.a.from'));
     }
 
-    public function testSet()
+    public function testSet(): void
     {
         $layout = new Layout;
         $layout->data = [
@@ -135,7 +135,7 @@ class LayoutTest extends TestCase
         $this->assertEquals('hi', $layout->get('files'));
     }
 
-    public function testReplacePlaceholders()
+    public function testReplacePlaceholders(): void
     {
         $layout = new Layout;
         $placeholders = [
@@ -147,7 +147,7 @@ class LayoutTest extends TestCase
         $this->assertEquals('UpdateRequest App\Http\Requests\Hello UpdateDto', $context);
     }
 
-    public function testAppendMethods()
+    public function testAppendMethods(): void
     {
         $layout = new Layout;
         $file = [
