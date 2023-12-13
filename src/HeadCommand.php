@@ -19,7 +19,8 @@ class HeadCommand extends Command
         ->setDescription('Generate code by layout')
         ->addArgument('layout', InputArgument::REQUIRED, 'The layout to use.')
         ->addOption('dry', 'd', InputOption::VALUE_NONE, 'Dry run.')
-        ->addOption('overwrite', 'o', InputOption::VALUE_NONE, 'Overwrite existed files.');
+        ->addOption('only', 'o', InputOption::VALUE_OPTIONAL, 'Only those file keys are generated. Separate by comma.')
+        ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force ovverwrite existed files.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -33,8 +34,19 @@ class HeadCommand extends Command
         }
 
         $cwd = getcwd();
-        $output->writeln('<info>Generating files...</info>');
+        $output->write('<info>Generating files...</info>');
+        $text = '';
+        if ($input->getOption('dry')) {
+            $text = '<comment> (dry run) </comment>';
+        }
+        if ($input->getOption('force')) {
+            $text = '<comment> (force) </comment>';
+        }
+        $output->writeln($text);
+
         $files = $this->layout->get('files');
+        $files = $this->getOnlyFiles($files, $input->getOption('only'));
+
         foreach ($files as $index => $file) {
             if (is_file($file['from']) and is_readable($file['from'])) {
                 $file['from'] = file_get_contents($file['from']);
@@ -46,12 +58,15 @@ class HeadCommand extends Command
 
             $files[$index] = $file;
 
-            $output->writeln('<info>' . $file['to'] . '</info>');
+            $skip = $file['skip'] ?? false;
+            $output->write('<info>' . $file['to'] . '</info>');
+            $output->writeln($skip ? '<comment> (skipped) </comment>' : '');
+
             if ($input->getOption('dry')) {
                 continue;
             }
 
-            if (file_exists($file['to']) && !$input->getOption('overwrite')) {
+            if (file_exists($file['to']) && !$input->getOption('force')) {
                 continue;
             }
 
@@ -61,5 +76,35 @@ class HeadCommand extends Command
         }
 
         return 0;
+    }
+
+    /**
+     * Get files only in the $only
+     *
+     * @param   array   $files  [$files description]
+     * @param   string  $only   [$only description]
+     *
+     * @return  array           [return description]
+     */
+    protected function getOnlyFiles(array $files, ?string $only): array
+    {
+        if (!$only) {
+            return $files;
+        }
+
+        $only = $only ? explode(',', $only) : [];
+        $only = array_filter($only);
+        $only = array_map('trim', $only);
+
+        $found = [];
+        foreach ($only as $fileKey) {
+            if (isset($files[$fileKey])) {
+                // ignore the skip flag
+                $files[$fileKey]['skip'] = false;
+                $found[] = $files[$fileKey];
+            }
+        }
+
+        return $found;
     }
 }

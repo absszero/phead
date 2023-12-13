@@ -92,11 +92,6 @@ class Layout
             if (!array_key_exists('to', $file)) {
                 continue;
             }
-
-            $disabled = $file['disabled'] ?? false;
-            if ($disabled) {
-                continue;
-            }
             $files[$fileKey] = $file;
         }
         $data['files'] = $files;

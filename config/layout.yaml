@@ -63,7 +63,7 @@ files:
     to: "{{ root }}app/Http/DTOs/{{ dir }}/UpdateDto.php"
 
   dto_test:
-    disabled: true
+    skip: true
     from: |
       <?php
 

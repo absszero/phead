@@ -18,12 +18,6 @@ class LayoutTest extends TestCase
                     'from' => 'yy',
                     'to' => 'yy'
                 ],
-                'c' => [
-                    'disabled' => true,
-                    'from' => 'zz',
-                    'to' => 'zz'
-                ],
-
             ]
         ];
 
@@ -31,7 +25,6 @@ class LayoutTest extends TestCase
         $data = $layout->filter($data);
         $this->assertArrayNotHasKey('a', $data['files']);
         $this->assertArrayHasKey('b', $data['files']);
-        $this->assertArrayNotHasKey('c', $data['files']);
     }
 
     //test replaceAllPaths
