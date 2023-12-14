@@ -44,7 +44,7 @@ class HeadCommand extends Command
         }
         $output->writeln($text);
 
-        $files = $this->layout->get('files');
+        $files = $this->layout->data['files'];
         $files = $this->getOnlyFiles($files, $input->getOption('only'));
 
         foreach ($files as $index => $file) {
@@ -52,7 +52,7 @@ class HeadCommand extends Command
                 $file['from'] = file_get_contents($file['from']);
             }
 
-            $file['from'] = $this->layout->replacePlaceholders($file['from'], $file['placeholders']);
+            $file['from'] = $this->layout->replaceWithFileVars($file['from'], $file['vars']);
             $file['from'] = $this->layout->appendMethods($file);
             $file['to_path'] = $cwd . '/' . $file['to'];
 

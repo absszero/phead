@@ -1,7 +1,10 @@
-root: build/
-dir: Hello
+vars:
+  root: build/
+  dir: Hello
 files:
   request:
+    vars:
+      some: some
     from: |
       <?php
 
@@ -31,7 +34,7 @@ files:
               ];
           }
       }
-    to: "{{ root }}app/Http/Requests/{{ dir }}/UpdateRequest.php"
+    to: "{{ vars.root }}app/Http/Requests/{{ vars.dir }}/UpdateRequest.php"
     methods:
       - |
         /**
@@ -60,7 +63,7 @@ files:
           }
       }
 
-    to: "{{ root }}app/Http/DTOs/{{ dir }}/UpdateDto.php"
+    to: "{{ vars.root }}app/Http/DTOs/{{ vars.dir }}/UpdateDto.php"
 
   dto_test:
     skip: true
@@ -76,7 +79,7 @@ files:
       class {{ class }} extends TestCase
       {
       }
-    to: "{{ root }}tests/Http/DTOs/{{ dir }}/UpdateDtoTest.php"
+    to: "{{ vars.root }}tests/Http/DTOs/{{ vars.dir }}/UpdateDtoTest.php"
     methods:
       - |
         public function testToArray(): void
@@ -99,7 +102,7 @@ files:
           //
       }
 
-    to: "{{ root }}app/Http/Controllers/{{ dir }}/MainController.php"
+    to: "{{ vars.root }}app/Http/Controllers/{{ vars.dir }}/MainController.php"
     methods:
       - |
         /**
@@ -124,7 +127,7 @@ files:
       class {{ class }} extends TestCase
       {
       }
-    to: "{{ root }}tests/Http/Controllers/{{ dir }}/MainControllerTest.php"
+    to: "{{ vars.root }}tests/Http/Controllers/{{ vars.dir }}/MainControllerTest.php"
     methods:
       - |
         public function testUpdate(): void
@@ -148,7 +151,7 @@ files:
           use HasFactory;
       }
 
-    to: "{{ root }}app/Models/{{ dir }}/Hello.php"
+    to: "{{ vars.root }}app/Models/{{ vars.dir }}/Hello.php"
     methods:
       - |
         /**
@@ -174,7 +177,7 @@ files:
       class {{ class }} extends TestCase
       {
       }
-    to: "{{ root }}tests/Models/{{ dir }}/HelloTest.php"
+    to: "{{ vars.root }}tests/Models/{{ vars.dir }}/HelloTest.php"
     methods:
       - |
         public function testUpdate(): void

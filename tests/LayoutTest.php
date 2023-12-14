@@ -25,40 +25,72 @@ class LayoutTest extends TestCase
         $data = $layout->filter($data);
         $this->assertArrayNotHasKey('a', $data['files']);
         $this->assertArrayHasKey('b', $data['files']);
+        $this->assertTrue($data['files']['b']['is_file']);
     }
 
-    //test replaceAllPaths
-    public function testReplaceAllPaths(): void
+    public function testReplaceEnvs(): void
     {
+        putenv('FOO=BAR');
+        $vars = [
+            'bar' => [
+                'foo' => '{{ $env.FOO }}',
+            ],
+            'foo' => '{{ $env.FOO }}',
+        ];
+
         $layout = new Layout;
-        $layout->data = [
-            'dir' => 'Hello',
-        ];
+        $vars = $layout->replaceEnvs($vars);
 
-        $files = [
-            'a' => [
-                'from' => '{{  dir }}/Request.stub',
-                'to' => '{{ dir  }}/Request.php',
-            ],
-            'b' => [
-                'from' => '
-                class Hello
-                {
-                    {{ dir }}
-                }',
-                'to' => '{{ dir  }}/Request.php',
-            ],
-        ];
-
-        $files = $layout->replaceAllPaths($files);
-        $this->assertEquals('Hello/Request.stub', $files['a']['from']);
-        $this->assertEquals('Hello/Request.php', $files['a']['to']);
-        $this->assertStringContainsString('{{ dir }}', $files['b']['from']);
-        $this->assertEquals('Hello/Request.php', $files['b']['to']);
+        $this->assertEquals('BAR', $vars['bar']['foo']);
+        $this->assertEquals('BAR', $vars['foo']);
     }
 
-    // test getWithPlaceholders
-    public function testGetWithPlaceholders(): void
+
+    public function testReplaceVars(): void
+    {
+        $vars = [
+            'bar' => [
+                'foo' => '{{ vars.foo }}',
+            ],
+            'foo' => 'BAR',
+        ];
+        $data = [
+            'vars' => $vars,
+            'files' => [
+                'a' => [
+                    'from' => '{{ vars.foo }}',
+                    'to' => '',
+                    'is_file' => true,
+                    'methods' => [
+                        '{{ vars.foo }}'
+                    ],
+                ],
+                'b' => [
+                    'from' => '
+                    class {
+                        {{ vars.foo }}
+                    }',
+                    'to' => '',
+                    'is_file' => true,
+                ],
+            ]
+        ];
+
+        $layout = new Layout;
+        $data = $layout->replaceVars($data);
+
+        $vars = $data['vars'];
+        $this->assertEquals('BAR', $vars['bar']['foo']);
+        $this->assertEquals('BAR', $vars['foo']);
+
+        $files = $data['files'];
+        $this->assertEquals('BAR', $files['a']['from']);
+        $this->assertStringContainsString('{{ vars.foo }}', $files['a']['methods'][0]);
+        $this->assertStringContainsString('{{ vars.foo }}', $files['b']['from']);
+    }
+
+    // test getFileVars
+    public function testgetFileVars(): void
     {
         $files = [
             'a' => [
@@ -68,22 +100,22 @@ class LayoutTest extends TestCase
         ];
 
         $layout = new Layout;
-        $files = $layout->getWithPlaceholders($files);
-        $this->assertEquals('UpdateRequest', $files['a']['placeholders']['class']);
-        $this->assertEquals('App\Http\Requests\Hello', $files['a']['placeholders']['namespace']);
+        $files = $layout->getFileVars($files);
+        $this->assertEquals('UpdateRequest', $files['a']['vars']['class']);
+        $this->assertEquals('App\Http\Requests\Hello', $files['a']['vars']['namespace']);
     }
 
-    public function testGetMethodPlacehoders(): void
+    public function testGetMethodVars(): void
     {
         $files = [
             'dto' => [
-                'placeholders' => [
+                'vars' => [
                     'class' => 'UpdateDto',
                     'namespace' => 'App\Dtos',
                 ]
             ],
             'a' => [
-                'placeholders' => [],
+                'vars' => [],
                 'methods' => [
                     'public toDto(): {{ files.dto }})',
                 ],
@@ -91,51 +123,15 @@ class LayoutTest extends TestCase
         ];
 
         $layout = new Layout;
-        $layout->data = [
+        $data = [
             'files' => $files,
         ];
 
-        $files = $layout->getMethodPlacehoders($files);
-        $this->assertEquals('\App\Dtos\UpdateDto', $files['a']['placeholders']['{{ files.dto }}']);
+        $files = $layout->getMethodVars($files, $data);
+        $this->assertEquals('\App\Dtos\UpdateDto', $files['a']['vars']['{{ files.dto }}']);
     }
 
-    public function testGet(): void
-    {
-        $layout = new Layout;
-        $layout->data = [
-            'files' => [
-                'a' => [
-                    'from' => 'xx',
-                ]
-            ]
-        ];
-
-        $this->assertEquals('hi', $layout->get('files.b', 'hi'));
-        $this->assertArrayHasKey('a', $layout->get('files'));
-        $this->assertEquals('xx', $layout->get('files.a.from'));
-    }
-
-    public function testSet(): void
-    {
-        $layout = new Layout;
-        $layout->data = [
-            'files' => [
-                'a' => [
-                    'from' => 'xx',
-                ]
-            ]
-        ];
-        $layout->set('files.b', 'hi');
-        $this->assertEquals('hi', $layout->get('files.b'));
-
-        $layout->set('files.a', 'hi');
-        $this->assertEquals('hi', $layout->get('files.a'));
-
-        $layout->set('files', 'hi');
-        $this->assertEquals('hi', $layout->get('files'));
-    }
-
-    public function testReplacePlaceholders(): void
+    public function testReplaceWithFileVars(): void
     {
         $layout = new Layout;
         $placeholders = [
@@ -143,7 +139,7 @@ class LayoutTest extends TestCase
             'namespace' => 'App\Http\Requests\Hello',
             '{{ files.dto }}' => 'UpdateDto',
         ];
-        $context = $layout->replacePlaceholders('{{ class }} {{ namespace }} {{ files.dto }}', $placeholders);
+        $context = $layout->replaceWithFileVars('{{ class }} {{ namespace }} {{ files.dto }}', $placeholders);
         $this->assertEquals('UpdateRequest App\Http\Requests\Hello UpdateDto', $context);
     }
 
@@ -155,7 +151,7 @@ class LayoutTest extends TestCase
             {
 
             }',
-            'placeholders' => [
+            'vars' => [
                 '{{ files.dto }}' => '\App\UpdateDto',
             ],
             'methods' => ['public toDto(): {{ files.dto }}) {}',
