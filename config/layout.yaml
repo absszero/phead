@@ -1,10 +1,15 @@
-vars:
-  root: build/
+$globals:
+  user: '{{ $env.USER }}'
+  root: build
   dir: Hello
-files:
+$files:
+  example:
+    from: config/example.stub
+    to: "{{ $globals.root }}/{{ $globals.dir }}/Example.php"
   request:
     vars:
-      some: some
+      foo: some
+      user: '{{ $env.USER }}'
     from: |
       <?php
 
@@ -16,6 +21,7 @@ files:
       {
           /**
           * Determine if the user is authorized to make this request.
+          * @author {{ user }}
           */
           public function authorize(): bool
           {
@@ -34,17 +40,17 @@ files:
               ];
           }
       }
-    to: "{{ vars.root }}app/Http/Requests/{{ vars.dir }}/UpdateRequest.php"
+    to: "{{ $globals.root }}/app/Http/Requests/{{ $globals.dir }}/UpdateRequest.php"
     methods:
       - |
         /**
         * Get the dto from the request
         *
-        * @return {{ files.dto }}
+        * @return {{ $files.dto }}
         */
-        public function toDto(): {{ files.dto }}
+        public function toDto(): {{ $files.dto }}
         {
-            return new {{ files.dto }};
+            return new {{ $files.dto }};
         }
 
   dto:
@@ -63,7 +69,7 @@ files:
           }
       }
 
-    to: "{{ vars.root }}app/Http/DTOs/{{ vars.dir }}/UpdateDto.php"
+    to: "{{ $globals.root }}/app/Http/DTOs/{{ $globals.dir }}/UpdateDto.php"
 
   dto_test:
     skip: true
@@ -79,12 +85,12 @@ files:
       class {{ class }} extends TestCase
       {
       }
-    to: "{{ vars.root }}tests/Http/DTOs/{{ vars.dir }}/UpdateDtoTest.php"
+    to: "{{ $globals.root }}/tests/Http/DTOs/{{ $globals.dir }}/UpdateDtoTest.php"
     methods:
       - |
         public function testToArray(): void
         {
-            $dto = new {{ files.dto }};
+            $dto = new {{ $files.dto }};
         }
 
 
@@ -102,17 +108,17 @@ files:
           //
       }
 
-    to: "{{ vars.root }}app/Http/Controllers/{{ vars.dir }}/MainController.php"
+    to: "{{ $globals.root }}/app/Http/Controllers/{{ $globals.dir }}/MainController.php"
     methods:
       - |
         /**
         * ....
-        * @param {{ files.request }} $request
+        * @param {{ $files.request }} $request
         */
-        public function update({{ files.request }} $request)
+        public function update({{ $files.request }} $request)
         {
             $dto = $request->toDto();
-            {{ files.model }}::updateByDto($dto);
+            {{ $files.model }}::updateByDto($dto);
         }
   controller_test:
     from: |
@@ -127,7 +133,7 @@ files:
       class {{ class }} extends TestCase
       {
       }
-    to: "{{ vars.root }}tests/Http/Controllers/{{ vars.dir }}/MainControllerTest.php"
+    to: "{{ $globals.root }}/tests/Http/Controllers/{{ $globals.dir }}/MainControllerTest.php"
     methods:
       - |
         public function testUpdate(): void
@@ -151,15 +157,15 @@ files:
           use HasFactory;
       }
 
-    to: "{{ vars.root }}app/Models/{{ vars.dir }}/Hello.php"
+    to: "{{ $globals.root }}/app/Models/{{ $globals.dir }}/Hello.php"
     methods:
       - |
         /**
         * ....
         *
-        * @param {{ files.dto }} $dto
+        * @param {{ $files.dto }} $dto
         */
-        public static function updateByDto({{ files.dto }} $dto)
+        public static function updateByDto({{ $files.dto }} $dto)
         {
             $data = $dto->toArray();
         }
@@ -177,12 +183,12 @@ files:
       class {{ class }} extends TestCase
       {
       }
-    to: "{{ vars.root }}tests/Models/{{ vars.dir }}/HelloTest.php"
+    to: "{{ $globals.root }}/tests/Models/{{ $globals.dir }}/HelloTest.php"
     methods:
       - |
         public function testUpdate(): void
         {
-            $dto = new {{ files.dto }};
+            $dto = new {{ $files.dto }};
 
-            $model = {{ files.model }}::updateByDto($dto);
+            $model = {{ $files.model }}::updateByDto($dto);
         }

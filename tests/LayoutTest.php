@@ -6,11 +6,18 @@ use Absszero\Head\Layout;
 
 class LayoutTest extends TestCase
 {
+    public function testParse(): void
+    {
+        $file = __DIR__ . '/../config/layout.yaml';
+        $layout = Layout::parse($file);
+        $this->assertInstanceOf(Layout::class, $layout);
+    }
+
     //test filter
     public function testFilter(): void
     {
         $data = [
-            'files' => [
+            '$files' => [
                 'a' => [
                     'from' => 'xx',
                 ],
@@ -18,146 +25,128 @@ class LayoutTest extends TestCase
                     'from' => 'yy',
                     'to' => 'yy'
                 ],
+                'c' => [
+                    'from' => __DIR__ . '/../config/example.stub',
+                    'to' => 'yy'
+                ],
             ]
         ];
 
         $layout = new Layout;
         $data = $layout->filter($data);
-        $this->assertArrayNotHasKey('a', $data['files']);
-        $this->assertArrayHasKey('b', $data['files']);
-        $this->assertTrue($data['files']['b']['is_file']);
+        $this->assertArrayNotHasKey('a', $data['$files']);
+        $this->assertArrayHasKey('b', $data['$files']);
+        $this->assertNotEquals(__DIR__ . '/../config/example.stub', $data['$files']['c']['from']);
+        $this->assertArrayHasKey('$globals', $data);
     }
 
+    // test replace environment vars
     public function testReplaceEnvs(): void
     {
         putenv('FOO=BAR');
         $vars = [
             'bar' => [
                 'foo' => '{{ $env.FOO }}',
+                'bar' => '{{ $env.BAR }}',
             ],
             'foo' => '{{ $env.FOO }}',
+            'foo2' => '{{ $globals.FOO }}',
         ];
 
         $layout = new Layout;
         $vars = $layout->replaceEnvs($vars);
 
         $this->assertEquals('BAR', $vars['bar']['foo']);
+        $this->assertEquals('{{ $env.BAR }}', $vars['bar']['bar']);
         $this->assertEquals('BAR', $vars['foo']);
+        $this->assertEquals('{{ $globals.FOO }}', $vars['foo2']);
     }
 
-
-    public function testReplaceVars(): void
+    // test replace with $globals vars
+    public function testReplaceGlobalVars(): void
     {
-        $vars = [
-            'bar' => [
-                'foo' => '{{ vars.foo }}',
-            ],
-            'foo' => 'BAR',
-        ];
         $data = [
-            'vars' => $vars,
-            'files' => [
+            '$globals' => [
+                'foo' => 'FOO'
+            ],
+            '$files' => [
                 'a' => [
-                    'from' => '{{ vars.foo }}',
-                    'to' => '',
-                    'is_file' => true,
-                    'methods' => [
-                        '{{ vars.foo }}'
+                    'vars' => [
+                        'bar'  => 'BAR',
                     ],
-                ],
-                'b' => [
-                    'from' => '
-                    class {
-                        {{ vars.foo }}
-                    }',
-                    'to' => '',
-                    'is_file' => true,
+                    'methods' => [
+                        '{{ bar }}',
+                        '{{ $globals.foo }}',
+                        '{{ $files.a }}'
+                    ],
                 ],
             ]
         ];
 
         $layout = new Layout;
-        $data = $layout->replaceVars($data);
+        $methods = $layout->replaceGlobalVars($data)['$files']['a']['methods'];
 
-        $vars = $data['vars'];
-        $this->assertEquals('BAR', $vars['bar']['foo']);
-        $this->assertEquals('BAR', $vars['foo']);
-
-        $files = $data['files'];
-        $this->assertEquals('BAR', $files['a']['from']);
-        $this->assertStringContainsString('{{ vars.foo }}', $files['a']['methods'][0]);
-        $this->assertStringContainsString('{{ vars.foo }}', $files['b']['from']);
+        $this->assertEquals('{{ bar }}', $methods[0]);
+        $this->assertEquals('FOO', $methods[1]);
+        $this->assertEquals('{{ $files.a }}', $methods[2]);
     }
 
-    // test getFileVars
-    public function testgetFileVars(): void
+    // test replace with files' vars
+    public function testReplaceLocalVars(): void
+    {
+        $files = [
+            'a' => [
+                'vars' => [
+                    'bar'  => 'BAR',
+                ],
+                'methods' => [
+                    '{{ bar }}',
+                    '{{ $globals.foo }}',
+                ],
+            ],
+        ];
+
+        $layout = new Layout;
+        $methods = $layout->replaceLocalVars($files)['a']['methods'];
+
+        $this->assertEquals('BAR', $methods[0]);
+        $this->assertEquals('{{ $globals.foo }}', $methods[1]);
+    }
+
+    // test collect files' vars
+    public function testCollectFilesVars(): void
     {
         $files = [
             'a' => [
                 'from' => 'xxx',
-                'to' => 'app/Http/Requests/Hello/UpdateRequest.php',
+                'to' => 'Foo/app/Http/Requests/Hello/UpdateRequest.php',
             ],
         ];
-
-        $layout = new Layout;
-        $files = $layout->getFileVars($files);
-        $this->assertEquals('UpdateRequest', $files['a']['vars']['class']);
-        $this->assertEquals('App\Http\Requests\Hello', $files['a']['vars']['namespace']);
-    }
-
-    public function testGetMethodVars(): void
-    {
-        $files = [
-            'dto' => [
-                'vars' => [
-                    'class' => 'UpdateDto',
-                    'namespace' => 'App\Dtos',
-                ]
-            ],
-            'a' => [
-                'vars' => [],
-                'methods' => [
-                    'public toDto(): {{ files.dto }})',
-                ],
-            ],
-        ];
-
-        $layout = new Layout;
         $data = [
-            'files' => $files,
+            '$files' => $files,
         ];
 
-        $files = $layout->getMethodVars($files, $data);
-        $this->assertEquals('\App\Dtos\UpdateDto', $files['a']['vars']['{{ files.dto }}']);
-    }
-
-    public function testReplaceWithFileVars(): void
-    {
         $layout = new Layout;
-        $placeholders = [
-            'class' => 'UpdateRequest',
-            'namespace' => 'App\Http\Requests\Hello',
-            '{{ files.dto }}' => 'UpdateDto',
-        ];
-        $context = $layout->replaceWithFileVars('{{ class }} {{ namespace }} {{ files.dto }}', $placeholders);
-        $this->assertEquals('UpdateRequest App\Http\Requests\Hello UpdateDto', $context);
+        $data = $layout->collectFilesVars($data);
+        $files = $data['$files'];
+        $this->assertEquals('UpdateRequest', $files['a']['vars']['class']);
+        $this->assertEquals('Foo\App\Http\Requests\Hello', $files['a']['vars']['namespace']);
     }
 
+    // test append methods to class
     public function testAppendMethods(): void
     {
         $layout = new Layout;
-        $file = [
-            'from' => 'class Hello
-            {
+        $files = [
+            'a' =>  [
+                'from' => 'class Hello
+                    {
 
-            }',
-            'vars' => [
-                '{{ files.dto }}' => '\App\UpdateDto',
-            ],
-            'methods' => ['public toDto(): {{ files.dto }}) {}',
+                    }',
+                    'methods' => 'public toDto(): \App\UpdateDto) {}',
             ]
         ];
-        $context = $layout->appendMethods($file);
-        $this->assertStringContainsString('public toDto(): \App\UpdateDto) {}', $context);
+        $files = $layout->appendMethods($files);
+        $this->assertStringContainsString('public toDto(): \App\UpdateDto) {}', $files['a']['from']);
     }
 }

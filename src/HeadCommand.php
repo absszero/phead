@@ -40,39 +40,35 @@ class HeadCommand extends Command
             $text = '<comment> (dry run) </comment>';
         }
         if ($input->getOption('force')) {
-            $text = '<comment> (force) </comment>';
+            $text = '<fg=red> (force) </>';
         }
         $output->writeln($text);
 
-        $files = $this->layout->data['files'];
+        $files = $this->layout->data['$files'];
         $files = $this->getOnlyFiles($files, $input->getOption('only'));
-
-        foreach ($files as $index => $file) {
-            if (is_file($file['from']) and is_readable($file['from'])) {
-                $file['from'] = file_get_contents($file['from']);
-            }
-
-            $file['from'] = $this->layout->replaceWithFileVars($file['from'], $file['vars']);
-            $file['from'] = $this->layout->appendMethods($file);
-            $file['to_path'] = $cwd . '/' . $file['to'];
-
-            $files[$index] = $file;
-
-            $skip = $file['skip'] ?? false;
+        foreach ($files as $file) {
+            $path = $cwd . '/' . $file['to'];
             $output->write('<info>' . $file['to'] . '</info>');
-            $output->writeln($skip ? '<comment> (skipped) </comment>' : '');
 
-            if ($input->getOption('dry')) {
+            $skip = $input->getOption('dry') || ($file['skip'] ?? false);
+            if ($skip) {
+                $output->writeln('<comment> (skip) </comment>');
                 continue;
             }
 
-            if (file_exists($file['to']) && !$input->getOption('force')) {
-                continue;
+            $text = '';
+            if (file_exists($file['to'])) {
+                if (!$input->getOption('force')) {
+                    $output->writeln('');
+                    continue;
+                }
+                $text = '<fg=red> (overwrite) </>';
             }
+            $output->writeln($text);
 
-            $dir = dirname($file['to_path']);
+            $dir = dirname($path);
             !is_dir($dir) && mkdir($dir, 0777, true);
-            file_put_contents($file['to_path'], $file['from']);
+            file_put_contents($path, $file['from']);
         }
 
         return 0;

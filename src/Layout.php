@@ -12,21 +12,19 @@ class Layout
     /**
      * @var array<string, mixed>
      */
-    public array $data = ['files' => []];
+    public array $data = [];
     public static function parse(string $file): self
     {
         $layout = new self;
         $data = (array)Yaml::parseFile($file);
         $data = $layout->filter($data);
-
-        $data['vars'] = $layout->replaceEnvs($data['vars'] ?? []);
-        $data = $layout->replaceVars($data);
-
-        $data['files'] = $layout->getFileVars($data['files']);
-        $data['files'] = $layout->getMethodVars($data['files']);
-
+        $data = $layout->replaceEnvs($data);
+        $data = $layout->replaceGlobalVars($data);
+        $data = $layout->collectFilesVars($data);
+        $data = $layout->replaceFilesVars($data);
+        $data['$files'] = $layout->replaceLocalVars($data['$files']);
+        $data['$files'] = $layout->appendMethods($data['$files']);
         $layout->data = $data;
-
         return $layout;
     }
 
@@ -38,13 +36,17 @@ class Layout
      */
     public function filter(array $data): array
     {
+        if (!array_key_exists('$globals', $data) || !is_array($data['$globals'])) {
+            $data['$globals'] = [];
+        }
+
         $files = [];
-        if (!array_key_exists('files', $data) || !is_array($data['files'])) {
-            $data['files'] = [];
+        if (!array_key_exists('$files', $data) || !is_array($data['$files'])) {
+            $data['$files'] = [];
             return $data;
         }
 
-        foreach ($data['files'] as $fileKey => $file) {
+        foreach ($data['$files'] as $fileKey => $file) {
             if (!array_key_exists('from', $file)) {
                 continue;
             }
@@ -52,10 +54,12 @@ class Layout
                 continue;
             }
 
-            $file['is_file'] = true;
+            if (is_file($file['from']) and is_readable($file['from'])) {
+                $file['from'] = file_get_contents($file['from']);
+            }
             $files[$fileKey] = $file;
         }
-        $data['files'] = $files;
+        $data['$files'] = $files;
 
         return $data;
     }
@@ -63,13 +67,61 @@ class Layout
     /**
      * get files' vars
      *
-     * @param   array<string, mixed>  $files  [$files description]
+     * @param   array<string, mixed>  $data
+     * @param   array<string, mixed>  $refs
      *
      * @return  array<string, mixed>
      */
-    public function getFileVars(array $files): array
+    public function replaceFilesVars(array $data, array $refs = []): array
     {
-        foreach ($files as $key => $file) {
+        if (!$refs) {
+            $refs = $data;
+        }
+
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $data[$key] = $this->replaceFilesVars($value, $refs);
+                continue;
+            }
+
+            $matches = [ 0 => [], 1 => [] ];
+            preg_match_all(self::BRACKET_PATTERN, $value, $matches, PREG_PATTERN_ORDER, 0);
+            if (!$matches[0]) {
+                continue;
+            }
+
+            foreach ($matches[1] as $index => $matchedKey) {
+                // if not found, use default
+                $matches[1][$index] = $matches[0][$index];
+
+                $isFiles = strstr($matchedKey, '$files.', true) === '';
+                if (!$isFiles) {
+                    continue;
+                }
+
+                $namespace = ArrAccess::get($refs, $matchedKey . '.vars.namespace');
+                $class = ArrAccess::get($refs, $matchedKey . '.vars.class');
+                if ($namespace && $class) {
+                    $matches[1][$index] = '\\' . $namespace . '\\' . $class;
+                }
+            }
+
+            $data[$key] = str_replace($matches[0], $matches[1], $value);
+        }
+
+        return $data;
+    }
+
+    /**
+     * collect files' vars
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return  array<string, mixed>
+     */
+    public function collectFilesVars(array $data): array
+    {
+        foreach ($data['$files'] as $key => $file) {
             $vars = [];
             $classFile = basename($file['to']);
             $vars['class'] = ucfirst(strstr($classFile, '.', true));
@@ -92,111 +144,50 @@ class Layout
             if (array_key_exists('vars', $file)) {
                 $vars = array_merge($file['vars'], $vars);
             };
-            $files[$key]['vars'] = $vars;
+            $data['$files'][$key]['vars'] = $vars;
         }
 
-        return $files;
-    }
-
-    /**
-     * Get methods' vars to file['vars']
-     *
-     * @param   array<string, mixed>  $files  [$files description]
-     * @param   array<string, mixed>  $refs
-     *
-     * @return  array<string, mixed>          [return description]
-     */
-    public function getMethodVars(array $files, array $refs = []): array
-    {
-        // fetch all brackets vars and replace with real classes
-        foreach ($files as $key => $file) {
-            if (!array_key_exists('methods', $file)) {
-                continue;
-            }
-            foreach ($file['methods'] as $method) {
-                $matches = [ 0 => [] ];
-                preg_match_all(self::BRACKET_PATTERN, $method, $matches, PREG_PATTERN_ORDER, 0);
-                if (!$matches[0]) {
-                    continue;
-                }
-
-                foreach ($matches[1] as $index => $fileKey) {
-                    $refFile = ArrAccess::get($refs, $fileKey);
-                    if (!$refFile) {
-                        continue;
-                    }
-
-                    $matches[1][$index] = '\\' . $refFile['vars']['namespace'] . '\\' . $refFile['vars']['class'];
-                }
-
-                $matches = array_combine($matches[0], $matches[1]);
-
-                $vars = array_merge($matches, $file['vars']);
-                $files[$key]['vars'] = $vars;
-            }
-        }
-
-        return $files;
-    }
-
-    /**
-     * replace with file's vars
-     *
-     * @param   string  $source  [$source description]
-     * @param   array<string, string>   $vars
-     *
-     * @return  string           [return description]
-     */
-    public function replaceWithFileVars(string $source, array $vars):  string
-    {
-        $search = array_keys($vars);
-        $search = array_map(function ($placeholder) {
-            if ($placeholder[0] === '{') {
-                return $placeholder;
-            }
-
-            return '{{ ' . $placeholder . ' }}';
-        }, $search);
-        $replace = array_values($vars);
-
-        return str_replace($search, $replace, $source);
+        return $data;
     }
 
     /**
      * append methods to file
      *
-     * @param   array<string, string|mixed>  $file  [$file description]
+     * @param   array<string, string|mixed>  $data
      *
-     * @return  string         [return description]
+     * @return  array<string, string|mixed>
      */
-    public function appendMethods(array $file): string
+    public function appendMethods(array $files): array
     {
-        if (!array_key_exists('methods', $file) || !is_array($file['methods'])) {
-            return $file['from'];
-        }
-
-        $methods = [];
-        foreach ($file['methods'] as $index => $method) {
-            $methods[$index] = $this->replaceWithFileVars($method, (array)$file['vars']);
-        }
-        foreach ($methods as $index => $method) {
-            $lines = array_filter(explode(PHP_EOL, $method));
-            $lines = array_map(fn($line) => str_pad('', $this->indent, $this->indentChar) . $line, $lines);
-            $methods[$index] = PHP_EOL . implode(PHP_EOL, $lines);
-        }
-        $methods = implode(PHP_EOL, $methods);
-
-        $length = strlen($file['from']) - 1;
-        while ($length > 0) {
-            if ($file['from'][$length] === '}') {
-                $file['from'] = substr_replace($file['from'], $methods, $length, 1);
-                $file['from'] = rtrim($file['from']) . PHP_EOL . '}' . PHP_EOL;
-                break;
+        foreach ($files as $key => $file) {
+            if (!array_key_exists('methods', $file)) {
+                continue;
             }
-            $length--;
+
+            // add indentation
+            $methods = [];
+            foreach ((array)$file['methods'] as $index => $method) {
+                $lines = array_filter(explode(PHP_EOL, $method));
+                $lines = array_map(fn($line) => str_pad('', $this->indent, $this->indentChar) . $line, $lines);
+                $methods[$index] = PHP_EOL . implode(PHP_EOL, $lines);
+            }
+            $methods = implode(PHP_EOL, $methods);
+
+            // insert methods on the bottom of the class file
+            $length = strlen($file['from']) - 1;
+            while ($length > 0) {
+                if ($file['from'][$length] === '}') {
+                    $file['from'] = substr_replace($file['from'], $methods, $length, 1);
+                    $file['from'] = rtrim($file['from']) . PHP_EOL . '}' . PHP_EOL;
+                    break;
+                }
+                $length--;
+            }
+
+            $files[$key] = $file;
         }
 
-        return $file['from'];
+        return $files;
     }
 
     /**
@@ -221,11 +212,19 @@ class Layout
             }
 
             foreach ($matches[1] as $index => $matchedKey) {
+                // if not found, use default
+                $matches[1][$index] = $matches[0][$index];
+
                 // it's an environment variable
-                $isStartsWith = strstr($matchedKey, '$env.', true) === '';
-                if ($isStartsWith) {
+                $isStartsWithEnv = strstr($matchedKey, '$env.', true) === '';
+                if ($isStartsWithEnv) {
                     $matchedKey = substr($matchedKey, 5);
-                    $matches[1][$index] = getenv($matchedKey);
+                    $found = getenv($matchedKey);
+
+
+                    if ($found) {
+                        $matches[1][$index] = $found;
+                    }
                 }
             }
 
@@ -239,29 +238,19 @@ class Layout
      * replace with variables
      *
      * @param   array<string, mixed>  $vars
-     * @param   array<string, mixed>  $refs
+     * @param   array<string, mixed>  $globalVars
      *
      * @return  array<string, mixed>          [return description]
      */
-    public function replaceVars(array $vars, ?array $refs = []): array
+    public function replaceGlobalVars(array $vars, ?array $globalVars = []): array
     {
-        if (!$refs) {
-            $refs = $vars;
+        if (!$globalVars) {
+            $globalVars = $vars;
         }
 
-        $isFile = $vars['is_file'] ?? false;
         foreach ($vars as $key => $value) {
-            if ($isFile) {
-                if ('methods' === $key) {
-                    continue;
-                }
-                if ('from' === $key && (strpos($value, PHP_EOL) !== false)) {
-                    continue;
-                }
-            }
-
             if (is_array($value)) {
-                $vars[$key] = $this->replaceVars($value, $refs);
+                $vars[$key] = $this->replaceGlobalVars($value, $globalVars);
                 continue;
             }
 
@@ -272,18 +261,74 @@ class Layout
             }
 
             foreach ($matches[1] as $index => $matchedKey) {
-                // if not found, keep the original value
-                $found = ArrAccess::get($refs, $matchedKey);
-                if (null === $found) {
-                    $matches[1][$index] = $matches[0][$index];
+                // if not found, use default
+                $matches[1][$index] = $matches[0][$index];
+
+                $isDollar = strstr($matchedKey, '$', true) === '';
+                if (!$isDollar) {
                     continue;
                 }
-                $matches[1][$index] = $found;
+                // do it later, we need to know namespace and class name
+                $isFiles = strstr($matchedKey, '$files.', true) === '';
+                if ($isFiles) {
+                    continue;
+                }
+
+                $found = ArrAccess::get($globalVars, $matchedKey);
+                if ($found) {
+                    $matches[1][$index] = $found;
+                }
             }
 
             $vars[$key] = str_replace($matches[0], $matches[1], $value);
         }
 
         return $vars;
+    }
+
+    /**
+     * replace with variables
+     *
+     * @param   array<string, mixed>  $data
+     * @param   array<string, mixed>  $vars
+     *
+     * @return  array<string, mixed>          [return description]
+     */
+    public function replaceLocalVars(array $data, ?array $vars = []): array
+    {
+        foreach ($data as $key => $value) {
+            if ($key === 'vars') {
+                continue;
+            }
+
+            if (is_array($value)) {
+                if (!$vars) {
+                    $vars = $value['vars'];
+                }
+
+                $data[$key] = $this->replaceLocalVars($value, $vars);
+                continue;
+            }
+
+            $matches = [ 0 => [], 1 => [] ];
+            preg_match_all(self::BRACKET_PATTERN, $value, $matches, PREG_PATTERN_ORDER, 0);
+            if (!$matches[0]) {
+                continue;
+            }
+
+            foreach ($matches[1] as $index => $matchedKey) {
+                // if not found, use default
+                $matches[1][$index] = $matches[0][$index];
+
+                $found = ArrAccess::get($vars, $matchedKey);
+                if ($found) {
+                    $matches[1][$index] = $found;
+                }
+            }
+
+            $data[$key] = str_replace($matches[0], $matches[1], $value);
+        }
+
+        return $data;
     }
 }
