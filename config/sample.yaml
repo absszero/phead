@@ -1,0 +1,31 @@
+$globals:
+  user: '{{ $env.USER }}'
+  dir: Hello
+$files:
+  controller:
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      class {{ class }}
+      {
+          public index()
+          {
+            $model = new {{ $files.model }};
+          }
+      }
+    to: "{{ $globals.dir }}/MyController.php"
+  model:
+    vars:
+      foo: bar
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      class {{ class }}
+      {
+          public $foo = '{{ foo }}';
+      }
+    to: "{{ $globals.dir }}/MyModel.php"

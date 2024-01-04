@@ -2,9 +2,9 @@
 
 namespace Tests;
 
-use Absszero\Head\HeadCommand;
+use Absszero\Phead\PheadCommand;
 
-class HeadCommandTest extends TestCase
+class PheadCommandTest extends TestCase
 {
     public function setUp(): void
     {
@@ -12,11 +12,25 @@ class HeadCommandTest extends TestCase
         require_once __DIR__ . '/../src/BuildInFunction.php';
     }
 
+    public function testgenSample(): void
+    {
+        $target = getcwd() . '/my-layout.yaml';
+        file_exists($target) && unlink($target);
+
+        $command = $this->addCommand(PheadCommand::class);
+        $input = ['layout' => 'sample'];
+        $tester = $this->executeCommand($command, $input);
+        $this->assertEquals(0, $tester->getStatusCode());
+
+        $tester = $this->executeCommand($command, $input);
+        $this->assertEquals('my-layout.yaml already exists. Replace current file?', $tester->getDisplay());
+    }
+
     // test HeadCommand
     public function testLayout(): void
     {
         // file not found
-        $command = $this->addCommand(HeadCommand::class);
+        $command = $this->addCommand(PheadCommand::class);
         $input = ['layout' => '/abc.yaml'];
         $tester = $this->executeCommand($command, $input);
         $this->assertEquals(1, $tester->getStatusCode());
@@ -34,7 +48,7 @@ class HeadCommandTest extends TestCase
             '--only' => 'dto_test, ',
         ];
 
-        $command = $this->addCommand(HeadCommand::class);
+        $command = $this->addCommand(PheadCommand::class);
         $tester = $this->executeCommand($command, $input);
 
         $this->assertStringContainsString('UpdateDtoTest.php', $tester->getDisplay());
@@ -48,7 +62,7 @@ class HeadCommandTest extends TestCase
             '--dry' => true,
         ];
 
-        $command = $this->addCommand(HeadCommand::class);
+        $command = $this->addCommand(PheadCommand::class);
         $tester = $this->executeCommand($command, $input);
         $this->assertStringContainsString('(dry run)', $tester->getDisplay());
     }
@@ -61,7 +75,7 @@ class HeadCommandTest extends TestCase
             '--force' => true,
         ];
 
-        $command = $this->addCommand(HeadCommand::class);
+        $command = $this->addCommand(PheadCommand::class);
         $tester = $this->executeCommand($command, $input);
         $this->assertStringContainsString('(force)', $tester->getDisplay());
     }

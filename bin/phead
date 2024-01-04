@@ -6,9 +6,9 @@ use Symfony\Component\Console\Application;
 
 try {
     $application = new Application();
-    $application->add(new Absszero\Head\HeadCommand);
+    $application->add(new Absszero\Phead\PheadCommand);
     // changfe default command
-    $application->setDefaultCommand('head', true);
+    $application->setDefaultCommand('phead', true);
     $application->run();
 } catch (Throwable $e) {
     echo $e->getFile() . ':' . $e->getLine() . PHP_EOL . PHP_EOL;

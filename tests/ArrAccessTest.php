@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use Absszero\Head\ArrAccess;
+use Absszero\Phead\ArrAccess;
 
 class ArrAccessTest extends TestCase
 {

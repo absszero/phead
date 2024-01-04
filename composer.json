@@ -1,6 +1,6 @@
 {
-    "name": "absszero/head",
-    "description": "A code generator from rquest to repoonse, from source to test.",
+    "name": "absszero/phead",
+    "description": "A PHP code generator to generate code via your LAYOUT file.",
     "license": "MIT",
     "type": "library",
     "keywords": [
@@ -21,7 +21,7 @@
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
-            "Absszero\\Head\\": "src/"
+            "Absszero\\Phead\\": "src/"
         }
     },
     "autoload-dev": {

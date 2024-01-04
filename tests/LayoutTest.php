@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use Absszero\Head\Layout;
+use Absszero\Phead\Layout;
 
 class LayoutTest extends TestCase
 {

@@ -1,26 +1,152 @@
-<p align="center"><img width="200" src="https://i.ibb.co/ZgBB9Zy/box.png" alt="Composer Package Template" /></p>
+<!-- <p align="center"><img width="200" src="https://i.ibb.co/ZgBB9Zy/box.png" alt="Composer Package Template" /></p> -->
 
-[![Build Status](https://github.com/rogervila/composer-package-template/workflows/build/badge.svg)](https://github.com/rogervila/composer-package-template/actions)
-[![StyleCI](https://github.styleci.io/repos/211657121/shield?branch=main)](https://github.styleci.io/repos/211657121)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=rogervila_composer-package-template&metric=alert_status)](https://sonarcloud.io/dashboard?id=rogervila_composer-package-template)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=rogervila_composer-package-template&metric=coverage)](https://sonarcloud.io/dashboard?id=rogervila_composer-package-template)
+[![Build Status](https://github.com/absszero/phead/workflows/build/badge.svg)](https://github.com/absszero/phead/actions)
 
-[![Latest Stable Version](https://poser.pugx.org/rogervila/composer-package-template/v/stable)](https://packagist.org/packages/rogervila/composer-package-template)
-[![Total Downloads](https://poser.pugx.org/rogervila/composer-package-template/downloads)](https://packagist.org/packages/rogervila/composer-package-template)
-[![License](https://poser.pugx.org/rogervila/composer-package-template/license)](https://packagist.org/packages/rogervila/composer-package-template)
 
-# Composer Package Template
+# phead
 
-## About
+A PHP code generator to generate code via your LAYOUT file.
 
-Composer Package Template brings a base setup useful for developing PHP packages.
+## Installation
 
-## Author
+1. Install the package:
+    ```shell
+    composer require global absszero/phead
+    ```
 
-Created by [Roger Vilà](https://rogervila.es)
+2. Set up Composer bin path:
 
-## License
+    ### Linux / macOS
 
-Composer Package Template is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+    ```bash sehll
+    # Bash shell
+    echo 'export PATH="$PATH:~/.composer/vendor/bin"' >> ~/.bashrc
+    source ~/.bashrc
 
-Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a>
+    # Z shell
+    echo 'export PATH="$PATH:~/.composer/vendor/bin"' >> ~/.zshrc
+    source ~/.zshrc
+
+    # Fish shell
+    fish_add_path ~/.composer/vendor/bin
+    ```
+
+    ### Windows
+     1. Right click on Start up -> System -> Advance system settings -> Environment variables -> System variables[below box] -> Select Path and click Edit.
+     2. Click New and add this value `%USERPROFILE%\AppData\Roaming\Composer\vendor\bin`.
+
+
+## Usage
+
+### From Sample
+
+```shell
+# Get a sample layout file named "my-layout.yaml".
+$ phead sample
+
+# Generate code via your layout file.
+$ phead my-layout.yaml
+
+Generating files...
+Hello/MyController.php
+Hello/MyModel.php
+```
+
+### Dry run
+
+```shell
+$ phead my-layout.yaml --dry
+
+Generating files... (dry run)
+Hello/MyController.php (skip)
+Hello/MyModel.php (skip)
+```
+
+### Overwrite files
+
+```shell
+$ phead my-layout.yaml --force
+
+Generating files... (force)
+Hello/MyController.php (overwrite)
+Hello/MyModel.php (overwrite)
+```
+
+### Only those files
+
+```shell
+$ phead my-layout.yaml --only=model
+
+Generating files...
+Hello/MyModel.php
+```
+
+## Layout
+
+```yaml
+# The global variables
+$globals:
+  dir: Hello
+  # Define a variable via environment variable
+  user: '{{ $env.USER }}'
+
+# The files
+$files:
+  # The file key
+  model:
+    # The file variables. 'namespace', 'class' variables will be auto genreated via 'to' path
+    vars:
+      foo: bar
+      # Overwrite default namespace
+      namespace: App\Hello
+    # 'from', 'to' are required
+    # 'from' can also be a stub file path, ex. from: /my/stub/file.stub
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      class {{ class }}
+      {
+          public $foo = '{{ foo }}';
+      }
+    to: "{{ $globals.dir }}/MyModel.php"
+  controller:
+    from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      class {{ class }}
+      {
+          public index()
+          {
+            // {{ $files.model }} will be replaced with \App\Hello\MyModel
+            $model = new {{ $files.model }};
+          }
+      }
+    to: "{{ $globals.dir }}/MyController.php"
+    # Append new methods to the class file
+    methods:
+      - |
+        public function get()
+        {
+            return 'something';
+        }
+
+  test:
+   # Skip the file
+   skip: true
+   from: |
+      <?php
+
+      namespace {{ namespace }};
+
+      class {{ class }}
+      {
+          public testSomething()
+          {
+          }
+      }
+   to: "{{ $globals.dir }}/MyTest.php"
+```
