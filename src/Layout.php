@@ -153,7 +153,7 @@ class Layout
     /**
      * append methods to file
      *
-     * @param   array<string, string|mixed>  $data
+     * @param   array<string, string|mixed>  $files
      *
      * @return  array<string, string|mixed>
      */

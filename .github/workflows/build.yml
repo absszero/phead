@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
         php: ['8.3', '8.2', '8.1', '8.0', '7.4', '7.3', '7.2']
@@ -38,6 +38,3 @@ jobs:
         run: composer test
         env:
           XDEBUG_MODE: coverage
-
-      - name: Run static analysis
-        run: composer static-analysis

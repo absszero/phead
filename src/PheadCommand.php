@@ -134,5 +134,7 @@ class PheadCommand extends Command
         if ($result) {
             return Command::SUCCESS;
         }
+
+        return Command::FAILURE;
     }
 }
