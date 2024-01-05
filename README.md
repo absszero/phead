@@ -1,11 +1,9 @@
-<!-- <p align="center"><img width="200" src="https://i.ibb.co/ZgBB9Zy/box.png" alt="Composer Package Template" /></p> -->
-
-[![Build Status](https://github.com/absszero/phead/workflows/build/badge.svg)](https://github.com/absszero/phead/actions)
-
-
 # phead
 
 A PHP code generator to generate code via your LAYOUT file.
+
+[![Build Status](https://github.com/absszero/phead/workflows/build/badge.svg)](https://github.com/absszero/phead/actions)
+
 
 ## Installation
 
@@ -40,6 +38,7 @@ A PHP code generator to generate code via your LAYOUT file.
 
 ### From Sample
 
+
 ```shell
 # Get a sample layout file named "my-layout.yaml".
 $ phead sample
@@ -64,6 +63,9 @@ Hello/MyModel.php (skip)
 
 ### Overwrite files
 
+Existing files will not be regenerated, you can orverwite with `--force`.
+
+
 ```shell
 $ phead my-layout.yaml --force
 
@@ -74,33 +76,43 @@ Hello/MyModel.php (overwrite)
 
 ### Only those files
 
+Only those file keys will be generated.
+
 ```shell
-$ phead my-layout.yaml --only=model
+$ phead my-layout.yaml --only=model1,model2
 
 Generating files...
-Hello/MyModel.php
+Hello/MyModel1.php
+Hello/MyModel2.php
 ```
 
 ## Layout
 
+Layout file has two main parts:
+
+- `$globals`: The global variables.
+- `$files`: The files for auto generation.
+
 ```yaml
-# The global variables
 $globals:
   dir: Hello
   # Define a variable via environment variable
   user: '{{ $env.USER }}'
 
-# The files
 $files:
   # The file key
   model:
-    # The file variables. 'namespace', 'class' variables will be auto genreated via 'to' path
+
+    # The file variables.
+    # 'namespace', 'class' variables will be auto genreated via 'to' path
     vars:
       foo: bar
       # Overwrite default namespace
       namespace: App\Hello
+
     # 'from', 'to' are required
-    # 'from' can also be a stub file path, ex. from: /my/stub/file.stub
+    # 'from' can also be a stub file path,
+    # EX. from: /my/stub/file.stub
     from: |
       <?php
 
