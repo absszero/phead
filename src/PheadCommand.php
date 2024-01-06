@@ -21,7 +21,7 @@ class PheadCommand extends Command
         ->addArgument('layout', InputArgument::REQUIRED, 'The layout to use.')
         ->addOption('dry', 'd', InputOption::VALUE_NONE, 'Dry run.')
         ->addOption('only', 'o', InputOption::VALUE_OPTIONAL, 'Only those file keys are generated. Separate by comma.')
-        ->addOption('force', 'f', InputOption::VALUE_NONE, 'Ovverwrite existed files.');
+        ->addOption('force', 'f', InputOption::VALUE_NONE, 'Overwrite existed files.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -122,9 +122,10 @@ class PheadCommand extends Command
     protected function genSample(InputInterface $input, OutputInterface $output): int
     {
         $target = getcwd() . '/my-layout.yaml';
+        $output->writeln('');
         if (file_exists($target)) {
             $helper = $this->getHelper('question');
-            $question = new ConfirmationQuestion('<comment>my-layout.yaml</comment> <info>already exists. Replace current file?</info>', false);
+            $question = new ConfirmationQuestion('<comment>my-layout.yaml</comment> <info>already exists. Replace the file?</info>', false);
             if (!$helper->ask($input, $output, $question)) {
                 return Command::SUCCESS;
             }
@@ -132,9 +133,11 @@ class PheadCommand extends Command
 
         $result = copy(__DIR__ . '/../config/sample.yaml', $target);
         if ($result) {
+            $output->writeln('<comment>my-layout.yaml</comment> <info>is generated.</info>');
             return Command::SUCCESS;
         }
 
+        $output->writeln('<comment>my-layout.yaml</comment><error> is not generated.</error>');
         return Command::FAILURE;
     }
 }

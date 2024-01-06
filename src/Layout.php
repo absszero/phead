@@ -290,22 +290,22 @@ class Layout
      * replace with variables
      *
      * @param   array<string, mixed>  $data
-     * @param   array<string, mixed>  $vars
+     * @param   null|array<string, mixed>  $vars
      *
      * @return  array<string, mixed>          [return description]
      */
-    public function replaceLocalVars(array $data, ?array $vars = []): array
+    public function replaceLocalVars(array $data, ?array $vars = null): array
     {
         foreach ($data as $key => $value) {
             if ($key === 'vars') {
                 continue;
             }
 
-            if (is_array($value)) {
-                if (!$vars) {
-                    $vars = $value['vars'];
-                }
+            if (is_null($vars)) {
+                $vars = $value['vars'];
+            }
 
+            if (is_array($value)) {
                 $data[$key] = $this->replaceLocalVars($value, $vars);
                 continue;
             }

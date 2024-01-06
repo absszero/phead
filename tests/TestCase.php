@@ -39,17 +39,17 @@ class TestCase extends PHPUnitTestCase
      *
      * @param   Command        $command  [$command description]
      * @param   array<string, mixed>          $input    [$input description]
-     * @param   Closure        $clourse  [$clourse description]
+     * @param   Closure        $closure
      *
      * @return  CommandTester            [return description]
      */
-    protected function executeCommand(Command $command, array $input = [], Closure $clourse = null): CommandTester
+    protected function executeCommand(Command $command, array $input = [], Closure $closure = null): CommandTester
     {
         $input['command'] = $command->getName();
         $commandTester = new CommandTester($command);
 
-        if ($clourse) {
-            $clourse($commandTester);
+        if ($closure) {
+            $closure($commandTester);
         }
 
         $commandTester->execute($input);

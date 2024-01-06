@@ -9,14 +9,14 @@ A PHP code generator to generate code via your LAYOUT file.
 
 1. Install the package:
     ```shell
-    composer require global absszero/phead
+    composer global require absszero/phead
     ```
 
 2. Set up Composer bin path:
 
     ### Linux / macOS
 
-    ```bash sehll
+    ```bash shell
     # Bash shell
     echo 'export PATH="$PATH:~/.composer/vendor/bin"' >> ~/.bashrc
     source ~/.bashrc
@@ -40,8 +40,10 @@ A PHP code generator to generate code via your LAYOUT file.
 
 
 ```shell
-# Get a sample layout file named "my-layout.yaml".
+# Get a sample layout file.
 $ phead sample
+
+my-layout.yaml is generated.
 
 # Generate code via your layout file.
 $ phead my-layout.yaml
@@ -63,7 +65,7 @@ Hello/MyModel.php (skip)
 
 ### Overwrite files
 
-Existing files will not be regenerated, you can orverwite with `--force`.
+Existing files will not be regenerated, you can overwrite with `--force`.
 
 
 ```shell
@@ -104,7 +106,7 @@ $files:
   model:
 
     # The file variables.
-    # 'namespace', 'class' variables will be auto genreated via 'to' path
+    # 'namespace', 'class' variables will be auto generated via 'to' path
     vars:
       foo: bar
       # Overwrite default namespace

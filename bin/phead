@@ -1,8 +1,34 @@
 #!/usr/bin/env php
 <?php
-require __DIR__.'/../vendor/autoload.php';
-
 use Symfony\Component\Console\Application;
+
+/**
+ * Include Composer autoload.
+ *
+ * @return  bool    [return description]
+ */
+function includeAutoload(): bool
+{
+    $files = [
+        __DIR__ . '/../vendor/autoload.php',
+        __DIR__ . '/../../../autoload.php',
+        __DIR__ . '/../../../../../vendor/autoload.php'
+    ];
+
+    foreach ($files as $file) {
+        $included = file_exists($file) && include $file;
+        if ($included) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+if (false === includeAutoload()) {
+    fwrite(STDERR, 'Install dependencies using Composer.' . PHP_EOL);
+    exit(1);
+}
 
 try {
     $application = new Application();

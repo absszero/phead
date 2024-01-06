@@ -99,6 +99,7 @@ class LayoutTest extends TestCase
                 'vars' => [
                     'bar'  => 'BAR',
                 ],
+                'from' => '{{ bar }}',
                 'methods' => [
                     '{{ bar }}',
                     '{{ $globals.foo }}',
@@ -107,10 +108,11 @@ class LayoutTest extends TestCase
         ];
 
         $layout = new Layout;
-        $methods = $layout->replaceLocalVars($files)['a']['methods'];
+        $file = $layout->replaceLocalVars($files)['a'];
 
-        $this->assertEquals('BAR', $methods[0]);
-        $this->assertEquals('{{ $globals.foo }}', $methods[1]);
+        $this->assertEquals('BAR', $file['from']);
+        $this->assertEquals('BAR', $file['methods'][0]);
+        $this->assertEquals('{{ $globals.foo }}', $file['methods'][1]);
     }
 
     // test collect files' vars
