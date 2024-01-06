@@ -4,6 +4,7 @@ sonar*
 junit-logfile.xml
 clover.xml
 composer.lock
+my-layout.yaml
 *.cache
 .idea/
 build/*

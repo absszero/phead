@@ -23,7 +23,7 @@ class PheadCommandTest extends TestCase
         $this->assertEquals(0, $tester->getStatusCode());
 
         $tester = $this->executeCommand($command, $input);
-        $this->assertEquals('my-layout.yaml already exists. Replace current file?', $tester->getDisplay());
+        $this->assertEquals(PHP_EOL . 'my-layout.yaml already exists. Replace the file?', $tester->getDisplay());
     }
 
     // test HeadCommand
