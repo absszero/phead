@@ -1,4 +1,5 @@
 <?php
+
 namespace Absszero\Phead;
 
 use Symfony\Component\Console\Command\Command;
@@ -18,24 +19,25 @@ class PheadCommand extends Command
         $this
         ->setName('phead')
         ->setDescription('Generate code by layout')
-        ->addArgument('layout', InputArgument::REQUIRED, 'The layout to use.')
+        ->addArgument('layout', InputArgument::REQUIRED, 'The layout file to use.')
         ->addOption('dry', 'd', InputOption::VALUE_NONE, 'Dry run.')
         ->addOption('only', 'o', InputOption::VALUE_OPTIONAL, 'Only those file keys are generated. Separate by comma.')
-        ->addOption('force', 'f', InputOption::VALUE_NONE, 'Overwrite existed files.');
+        ->addOption('force', 'f', InputOption::VALUE_NONE, 'Overwrite existed files.')
+        ->addOption('sample', 's', InputOption::VALUE_NONE, 'Generate a sample layout file.')
+        ->addOption('var', '$', InputOption::VALUE_NONE, 'Add a variable for the layout file.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $file = $input->getArgument('layout');
-        if ($file === 'sample') {
-            return $this->genSample($input, $output);
+        if ($input->getOption('sample')) {
+            return $this->generateSample($input, $output);
         }
 
         try {
             $file = $input->getArgument('layout');
             $this->layout = Layout::parse($file);
         } catch (ParseException $th) {
-            $output->writeln('<error>'. $th->getMessage() .'</error>');
+            $output->writeln('<error>' . $th->getMessage() . '</error>');
             return Command::FAILURE;
         }
 
@@ -66,7 +68,7 @@ class PheadCommand extends Command
             $text = '';
             if (file_exists($file['to'])) {
                 if (!$input->getOption('force')) {
-                    $output->writeln('');
+                    $output->writeln('<comment> (skip) </comment>');
                     continue;
                 }
                 $text = '<fg=red> (overwrite) </>';
@@ -119,13 +121,13 @@ class PheadCommand extends Command
      *
      * @return  int                       [return description]
      */
-    protected function genSample(InputInterface $input, OutputInterface $output): int
+    protected function generateSample(InputInterface $input, OutputInterface $output): int
     {
-        $target = getcwd() . '/my-layout.yaml';
+        $target = $input->getArgument('layout');
         $output->writeln('');
         if (file_exists($target)) {
             $helper = $this->getHelper('question');
-            $question = new ConfirmationQuestion('<comment>my-layout.yaml</comment> <info>already exists. Replace the file?</info>', false);
+            $question = new ConfirmationQuestion("<comment>$target</comment> <info>already exists. Replace the file?</info>", false);
             if (!$helper->ask($input, $output, $question)) {
                 return Command::SUCCESS;
             }
@@ -133,11 +135,11 @@ class PheadCommand extends Command
 
         $result = copy(__DIR__ . '/../config/sample.yaml', $target);
         if ($result) {
-            $output->writeln('<comment>my-layout.yaml</comment> <info>is generated.</info>');
+            $output->writeln("<comment>$target</comment> <info>is generated.</info>");
             return Command::SUCCESS;
         }
 
-        $output->writeln('<comment>my-layout.yaml</comment><error> is not generated.</error>');
+        $output->writeln("<comment>$target</comment><error> is not generated.</error>");
         return Command::FAILURE;
     }
 }

@@ -1,11 +1,12 @@
 <?php
+
 namespace Absszero\Phead;
 
 use Symfony\Component\Yaml\Yaml;
 
 class Layout
 {
-    const BRACKET_PATTERN = '/{{ *([^ ]+) *}}/';
+    public const BRACKET_PATTERN = '/{{ *([^ ]+) *}}/';
 
     public int $indent = 4;
     public string $indentChar = ' ';
@@ -15,7 +16,7 @@ class Layout
     public array $data = [];
     public static function parse(string $file): self
     {
-        $layout = new self;
+        $layout = new self();
         $data = (array)Yaml::parseFile($file);
         $data = $layout->filter($data);
         $data = $layout->replaceEnvs($data);
@@ -169,9 +170,9 @@ class Layout
             foreach ((array)$file['methods'] as $index => $method) {
                 $lines = array_filter(explode(PHP_EOL, $method));
                 $lines = array_map(fn($line) => str_pad('', $this->indent, $this->indentChar) . $line, $lines);
-                $methods[$index] = PHP_EOL . implode(PHP_EOL, $lines);
+                $methods[$index] = PHP_EOL . join(PHP_EOL, $lines);
             }
-            $methods = implode(PHP_EOL, $methods);
+            $methods = join(PHP_EOL, $methods);
 
             // insert methods on the bottom of the class file
             $length = strlen($file['from']) - 1;

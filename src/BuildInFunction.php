@@ -1,4 +1,5 @@
 <?php
+
 namespace Absszero\Phead;
 
 function file_get_contents(string $file): string
