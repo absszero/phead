@@ -128,7 +128,7 @@ class LayoutTest extends TestCase
             '$files' => $files,
         ];
 
-        $layout = new Layout;
+        $layout = new Layout();
         $data = $layout->collectFilesVars($data);
         $files = $data['$files'];
         $this->assertEquals('UpdateRequest', $files['a']['vars']['class']);

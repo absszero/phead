@@ -5,6 +5,7 @@ on:
     paths:
       - "**.php"
       - "phpcs.xml"
+      - "composer.json"
       - ".github/workflows/lint.yaml"
 
 jobs:
