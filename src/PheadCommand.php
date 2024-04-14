@@ -23,8 +23,8 @@ class PheadCommand extends Command
         ->addOption('dry', 'd', InputOption::VALUE_NONE, 'Dry run.')
         ->addOption('only', 'o', InputOption::VALUE_OPTIONAL, 'Only those file keys are generated. Separate by comma.')
         ->addOption('force', 'f', InputOption::VALUE_NONE, 'Overwrite existed files.')
-        ->addOption('sample', 's', InputOption::VALUE_NONE, 'Generate a sample layout file.')
-        ->addOption('var', '$', InputOption::VALUE_NONE, 'Add a variable for the layout file.');
+        ->addOption('sample', 's', InputOption::VALUE_NONE, 'Generate a sample layout file.');
+        // ->addOption('var', '$', InputOption::VALUE_NONE, 'Add a variable for the layout file.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
