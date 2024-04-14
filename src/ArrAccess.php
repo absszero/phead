@@ -1,4 +1,5 @@
 <?php
+
 namespace Absszero\Phead;
 
 class ArrAccess

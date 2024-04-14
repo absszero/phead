@@ -41,7 +41,7 @@ A PHP code generator to generate code via your LAYOUT file.
 
 ```shell
 # Get a sample layout file.
-$ phead sample
+$ phead --sample my-layout.yaml
 
 my-layout.yaml is generated.
 

@@ -12,13 +12,13 @@ class PheadCommandTest extends TestCase
         require_once __DIR__ . '/../src/BuildInFunction.php';
     }
 
-    public function testgenSample(): void
+    public function testGenerateSample(): void
     {
         $target = getcwd() . '/my-layout.yaml';
         file_exists($target) && unlink($target);
 
         $command = $this->addCommand(PheadCommand::class);
-        $input = ['layout' => 'sample'];
+        $input = ['layout' => 'my-layout.yaml', '--sample' => true];
         $tester = $this->executeCommand($command, $input);
         $this->assertEquals(0, $tester->getStatusCode());
 

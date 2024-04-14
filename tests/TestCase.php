@@ -1,4 +1,5 @@
 <?php
+
 namespace Tests;
 
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
@@ -26,7 +27,7 @@ class TestCase extends PHPUnitTestCase
     protected function addCommand($class): Command
     {
         if (is_string($class)) {
-            $class = new $class;
+            $class = new $class();
         }
 
         $this->application->add($class);

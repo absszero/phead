@@ -32,7 +32,7 @@ class LayoutTest extends TestCase
             ]
         ];
 
-        $layout = new Layout;
+        $layout = new Layout();
         $data = $layout->filter($data);
         $this->assertArrayNotHasKey('a', $data['$files']);
         $this->assertArrayHasKey('b', $data['$files']);
@@ -53,7 +53,7 @@ class LayoutTest extends TestCase
             'foo2' => '{{ $globals.FOO }}',
         ];
 
-        $layout = new Layout;
+        $layout = new Layout();
         $vars = $layout->replaceEnvs($vars);
 
         $this->assertEquals('BAR', $vars['bar']['foo']);
@@ -83,7 +83,7 @@ class LayoutTest extends TestCase
             ]
         ];
 
-        $layout = new Layout;
+        $layout = new Layout();
         $methods = $layout->replaceGlobalVars($data)['$files']['a']['methods'];
 
         $this->assertEquals('{{ bar }}', $methods[0]);
@@ -107,7 +107,7 @@ class LayoutTest extends TestCase
             ],
         ];
 
-        $layout = new Layout;
+        $layout = new Layout();
         $file = $layout->replaceLocalVars($files)['a'];
 
         $this->assertEquals('BAR', $file['from']);
@@ -128,7 +128,7 @@ class LayoutTest extends TestCase
             '$files' => $files,
         ];
 
-        $layout = new Layout;
+        $layout = new Layout();
         $data = $layout->collectFilesVars($data);
         $files = $data['$files'];
         $this->assertEquals('UpdateRequest', $files['a']['vars']['class']);
@@ -138,7 +138,7 @@ class LayoutTest extends TestCase
     // test append methods to class
     public function testAppendMethods(): void
     {
-        $layout = new Layout;
+        $layout = new Layout();
         $files = [
             'a' =>  [
                 'from' => 'class Hello
