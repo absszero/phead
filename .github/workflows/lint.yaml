@@ -21,9 +21,8 @@ jobs:
           php phpcs.phar --version
 
       - run: |
-          git diff --name-only ${{ github.event.pull_request.base.sha }} |egrep '\.php$' > .list.txt
-          php phpcs.phar --standard=./phpcs.xml --file-list=./.list.txt
-
+          git diff --name-only ${{ github.event.pull_request.base.sha }} |egrep '\.php$' > .list.txt || true
+          [ -s ./.list.txt ] && phpcs --standard=./phpcs.xml --file-list=./.list.txt
       - name: Update composer
         run: composer selfupdate
 
